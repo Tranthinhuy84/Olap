@@ -1,0 +1,129 @@
+--Cho biet tong doanh so ban hang o Australia--
+With member [Measures].[Doanh thu]
+as [Measures].[Sales], FORMAT_STRING='Currency'
+SELECT {[Measures].[Doanh thu]} ON COLUMNS,
+{[DIM SHIP].[Year Ship].MEMBERS} ON ROWS
+FROM [Store Wh]
+WHERE [Dim Location].[Country].&[Australia]&[APAC]&[Oceania];
+
+--CHO BIET DOANH THU, LOI NHUAN, SO LUONG SAN PHA BAN RA CUA TUNG SUB-CATEGORY--
+SELECT {[Measures].[Sales], [Measures].[Profit],[Measures].[Quantity]} ON COLUMNS,
+{[DIM PRODUCT].[Sub- Category].CHILDREN} ON ROWS
+FROM [Store Wh];
+
+--VOI MOI QUOC GIA DUA RA 3 THANH PHO CO LOI NHUAN CAO NHAT--
+SELECT [Measures].[Profit] ON COLUMNS,
+{
+GENERATE ([Dim Location].[Country].CHILDREN,
+TOPCOUNT({[Dim Location].[Country].CURRENTMEMBER * [Dim Location].[City].CHILDREN}
+,3
+,[Measures].[Profit]
+)
+)} ON ROWS
+FROM [Store Wh];
+
+--VOI MOI QUOC GIA DUA RA 3 THANH PHO CO LOI NHUAN THAP NHAT--
+SELECT [Measures].[Profit] ON COLUMNS,
+{
+GENERATE ([Dim Location].[Country].CHILDREN,
+BOTTOMCOUNT({[Dim Location].[Country].CURRENTMEMBER * [Dim Location].[City].CHILDREN}
+,3
+,[Measures].[Profit]
+)
+)} ON ROWS
+FROM [Store Wh];
+
+--LIET KE 3 MA SAN PHAM CO SO LUONG BAN NHIEU NHAT TAI JAPAN--
+SELECT {[Measures].[Quantity]} ON COLUMNS,
+{ BOTTOMCOUNT(
+NONEMPTY(
+[DIM PRODUCT].[Product ID].CHILDREN, [Measures].[Quantity]
+)
+,3
+,[Measures].[Quantity]
+)} ON ROWS
+FROM [Store Wh]
+WHERE [Dim Location].[Country].&[Japan]&[APAC]&[North Asia];
+
+--lIET KE 3 MA SAN PHAM CO SLUONG MUA HANG IT NHAT TAI MEXICO--
+SELECT {[Measures].[Quantity]} ON COLUMNS,
+{ TOPCOUNT(
+NONEMPTY(
+[DIM PRODUCT].[Product ID].CHILDREN, [Measures].[Quantity]
+)
+,3
+,[Measures].[Quantity]
+)} ON ROWS
+FROM [Store Wh]
+WHERE [Dim Location].[Country].&[Mexico]&[LATAM]&[North];
+
+--LIET KE SLUONG CHI TIET DON HANG BAN RA THEO TUNG NAM ( TRU MALAYSIA VA INDONESIA)
+SELECT {[DIM SHIP].[Year Ship].MEMBERS} ON COLUMNS,
+{EXCEPT (
+{[Dim Location].[Country].CHILDREN},
+[Dim Location].[Country].&[Indonesia]&[APAC]&[Southeast Asia],
+[Dim Location].[Country].&[Malaysia]&[APAC]&[Southeast Asia] ) } ON ROWS
+FROM [Store Wh]
+WHERE [Measures].[FACT FINAL Count];
+
+--DUA RA PHAN TRAM VE PHI VAN CHUYEN CUA TUNG STATE TRONG NAM 2015--
+WITH MEMBER [Measures].[Shipping Percent]
+AS [Measures].[Shipping Cost]
+/SUM
+([Dim Location].[State].CURRENTMEMBER.PARENT,
+[Measures].[Shipping Cost]
+)
+,FORMAT_STRING ='Percent'
+SELECT [Measures].[Shipping Percent] ON COLUMNS,
+{[Dim Location].[State].CHILDREN} ON ROWS
+FROM [Store Wh]
+WHERE [DIM SHIP].[Year Ship].&[2015];
+
+--SAP XEP TANG DAN LOI NHUAN % TUNG LOAI SAN PHAM--
+
+--LIET KE NHUNG MA SP THUOC TOP 5 DOANH THU CAO NHAT VA TOP 3 SO LUONG BAN CAO NHAT NAM 2012--
+SELECT {[Measures].[Sales],[Measures].[Quantity]} ON COLUMNS,
+{UNION (
+    TOPCOUNT([DIM PRODUCT].[Product ID].CHILDREN,
+	5,
+[Measures].[Quantity]),
+     TOPCOUNT ([DIM PRODUCT].[Product ID].CHILDREN, 3, [Measures].[FACT FINAL Count])
+	 )
+	 } ON ROWS
+	 FROM [Store Wh]
+	 WHERE [DIM SHIP].[Year Ship].&[2012];
+
+--lIET KE NHUNG MA SAN PHAM CO LOI NHUAN TU 2000-20000--
+SELECT {[Measures].[Sales]} ON COLUMNS,
+{ INTERSECT ( {FILTER([DIM PRODUCT].[Product ID].CHILDREN, [Measures].[Sales] >=2000)},
+{FILTER ([DIM PRODUCT].[Product ID].CHILDREN, [Measures].[Sales] <=20000)})} ON ROWS
+FROM [Store Wh];
+
+--CHO BIET MA SAN PHAM, LOAI SAN PHAM VA TONG SO LUONG LON HON 5 CUA CAC QUOC GIA--
+SELECT {[Measures].[Quantity]} ON COLUMNS,
+{GENERATE (
+[Dim Location].[Country].CHILDREN,[Dim Location].[Country].CURRENTMEMBER*
+FILTER(
+{[DIM PRODUCT].[Product ID].CHILDREN * [DIM PRODUCT].[Category]},[Measures].[Quantity] > 5 )
+)
+} ON ROWS
+FROM [Store Wh];
+
+--TONG SO LUONG DON HANG BAN DUOC O CANADA QUA TUNG NAM--
+SELECT {[Measures].[FACT FINAL Count]} ON COLUMNS,
+{[DIM SHIP].[Year Ship].MEMBERS} ON ROWS
+FROM [Store Wh]
+WHERE [Dim Location].[Country].&[Canada]&[Canada]&[Canada];
+
+--CHO BIET MA SAN PHAM, LOAI SAN PHAM CO SO LUONG BAN NHIEU NHAT TRONG QUY 2 NAM 2011--
+SELECT {[Measures].[Quantity]} ON COLUMNS,
+{ TOPCOUNT({[DIM PRODUCT].[Product ID].CHILDREN * [DIM PRODUCT].[Category].CHILDREN,1,[Measures].[Quantity]}) } ON ROWS
+FROM [Store Wh]
+WHERE [DIM SHIP].[Quarter Ship].&[2]&[2011];
+
+--CHO BIET DOANH THU, LOI NHUAN, SO LUONG BAN RA CUA TUNG LOAI SAN PHAM--
+SELECT {[Measures].[Sales],[Measures].[Profit],[Measures].[Quantity]} ON COLUMNS,
+{[DIM PRODUCT].[Category].CHILDREN} ON ROWS
+FROM [Store Wh];
+
+
